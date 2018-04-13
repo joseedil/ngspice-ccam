@@ -1,0 +1,7 @@
+#!/bin/bash
+../ngspice-27/configure \
+--prefix=$HOME/.local/ngspice \
+--enable-xspice \
+--disable-debug \
+--with-readline=yes \
+--enable-adms
