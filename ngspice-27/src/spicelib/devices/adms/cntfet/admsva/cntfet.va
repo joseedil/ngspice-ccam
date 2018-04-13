@@ -1,0 +1,627 @@
+//
+// Copyright @ 2015 Chair for Electron Devices and Integrated Circuits (CEDIC) at TU Dresden.
+//
+// The terms under which the software and associated documentation (the Software) is provided are as the following:
+//
+// The Software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the Software or the use or other dealings in the Software.
+//
+// CEDIC grants, free of charge, to any users the right to modify, copy, and redistribute the Software, both within the user's organization and externally, subject to the following restrictions:
+//
+// 1. The users agree not to charge for the code itself but may charge for additions, extensions, or support.
+//
+// 2. In any product based on the Software, the users agree to acknowledge the Research Group that developed the software. This acknowledgment shall appear in the product documentation.
+//
+// 3. The users agree to obey all U.S. Government restrictions governing redistribution or export of the software.
+//
+// 4. The users agree to reproduce any copyright notice which appears on the software on any copy or modification of such made available to others.
+//
+// Michael Schroter (mschroter@ieee.org)
+// May 27, 2015
+//
+
+//CNTFET compact model
+
+`include "constants.h"
+`include "discipline.h"
+
+`define a_cc 1.421e-10
+`define a_0 2.4612e-10
+`define t_cc 3.033
+`define D_0 8/(3*`M_PI*`t_cc*`a_cc)
+`define k_Bnorm `P_K/`P_Q
+`define Gmin $simparam("gmin",1e-12)
+
+module cntfet(d,g,s,b);
+
+inout d,g,s,b;
+electrical d,g,s,dx,sx,di,gi,si,dim,sim,node_trap;
+// thermal tnode_s,tnode_m;
+
+
+// DC parameters s-tubes
+
+parameter real idstn = 0.3 from [0:10];
+// current factor n-type conduction
+
+parameter real vthin = -0.15 from [-10:10];
+// threshold voltage n-type
+
+parameter real vth0in = 5 from (0:100];
+// fit parameter n-type current
+
+parameter real athin = 2 from (0:100];
+// fit parameter n-type current
+
+parameter real sthin = 0.2 from [0:1];
+// fit parameter for n-type subthreshold slope
+
+parameter real idstp = 0.15 from [0:10];
+// current factor p-type conduction
+
+parameter real vthip = -0.03 from [-10:10];
+// threshold voltage p-type
+
+parameter real vth0ip = 5 from (0:100];
+// fit parameter p-type current
+
+parameter real athip = 2 from (0:100];
+// fit parameter p-type current
+
+parameter real sthip = 0.2 from [0:1];
+// fit parameter for subthreshold slope
+
+parameter real vdcr = 2 from (0:50];
+// fit parameter for current calculation
+
+parameter real betdcr = 1 from (0:50];
+// fit parameter for current calculation
+
+parameter real smss = 10 from [0:100];
+// fit parameter transition to subthreshold region
+
+parameter real facss = 1 from [1:10];
+// fit parameter DIBL
+
+parameter real rscs = 20 from [0:1M];
+// source contact resistance of s-tubes
+
+parameter real rdcs = 20 from [0:1M];
+// drain contact resistance of s-tubes
+
+
+// AC parameters s-tubes
+
+parameter real ctn0 = 2e-13 from [0:1u];
+// charge factor
+
+parameter real ctp0 = 2e-13 from [0:1u];
+// charge factor
+
+parameter real vthqs = -0.1 from [-10:10];
+//treshhold volatge for Qs
+
+parameter real vth0qs = 0.7 from (0:100];
+// fit parameter for Qs calculation
+
+parameter real athqs = 3 from (0:100];
+// fit parameter for Qs calculation
+
+parameter real vthqd = -1 from [-10:10];
+// treshhold voltage for Qd
+
+parameter real vth0qd = 3 from (0:100];
+// fit parameter for Qd calculation
+
+parameter real athqd = 3 from (0:100];
+// fit parameter for Qd calculation
+
+parameter real pqsd = 0.15 from [0:1];
+// source/drain partitioning factor
+
+
+// parameters m-tubes
+
+parameter real rmta = 30 from [0:1G];
+// low voltage resistance of metallic CNTs
+
+parameter real amto = 25 from [0:1M];
+// saturation parameter of metallic CNTs
+
+parameter real cmt = 2e-13 from [0:1u];
+// capacitance of metallic tubes
+
+parameter real pqmt = 0.5 from [0:1];
+// source/drain partitioning factor
+
+parameter real rscm = 8 from [0:1M];
+// source contact resistance of m-tubes
+
+parameter real rdcm = 8 from [0:1M];
+// drain contact resistance of m-tubes
+
+
+// parameters for noise model
+
+parameter real fanof = 1.0 from [0:10];
+// Fano factor for channel shot noise calculation
+
+parameter real fanofmt = 1.0 from [0:10];
+// Fano factor for metallic tube shot noise calculation
+
+parameter real hoogef = 2e-3 from [0:1];
+// Hooge parameter for 1/f-noise calcultation
+
+parameter real beta_fn = 1 from [0:10];
+// slope of flicker frequency distribution
+
+
+// external parameters
+
+parameter real rsf = 0.1 from [0:1k];
+// source finger resistance
+
+parameter real rdf = 0.1 from [0:1k];
+// drain finger resistance
+
+parameter real rg = 10 from [0:1k];
+// gate finger resistance
+
+parameter real cgspar1=0 from [0:1u];
+// parasitic gate-source capacitance 1
+
+parameter real cgspar2=3e-14 from [0:1u];
+// parasitic gate-source capacitance 2
+
+
+parameter real cgdpar1=8e-14 from [0:1u];
+// parasitic gate-drain capacitance 1
+
+parameter real cgdpar2=3e-14 from [0:1u];
+// parasitic gate-drain capacitance 1
+
+parameter real cdspar=2e-14 from [0:1u];
+// parasitic drain-source capacitance
+
+
+// parameters for temperature dependence
+
+parameter real tnom = 27;
+parameter real rths = 1 from [0:1k];
+parameter real rthm = 1 from [0:1k];
+
+parameter real zetrmta = 0 from [0:10];
+parameter real zetamto = 0 from [0:10];
+
+parameter real alvthin = 0 from [0:10];
+parameter real alvth0in = 0 from [0:10];
+parameter real alvthip = 0 from [0:10];
+parameter real alvth0ip = 0 from [0:10];
+
+parameter real alidst = 0 from [0:10];
+parameter real alct0 = 0 from [0:10];
+
+parameter real alvthqs = 0 from [0:10];
+parameter real alvth0qs = 0 from [0:10];
+parameter real alvthqd = 0 from [0:10];
+parameter real alvth0qd = 0 from [0:10];
+
+parameter real alrscon = 0 from [0:10];
+parameter real alrmcon = 0 from [0:10];
+
+
+
+// parameters for trap model
+
+parameter real atrap = 0.5;
+parameter real btrap = 0.5;
+parameter real ctrap = 2;
+
+parameter real w0trap = 0;
+parameter real strap = 0;
+
+
+real fds,fgs,fgsp,fgsn,Qs_cnt,Qd_cnt,u;
+real vg_t,vg_eff_n,vg_eff_p,athn_con,athp_con;
+real curr, rmt;
+real fnamp;
+real rmta_t, amto_t;
+real delta_T_s, Tvar_s,delta_T_m, Tvar_m,T0,Pdiss_s,Pdiss_m;
+real idstn_t, idstp_t, ctn0_t, ctp0_t;
+real vth0in_t,vthin_t,vth0ip_t,vthip_t;
+real vthqs_t,vth0qs_t,vthqd_t,vth0qd_t;
+real rscs_t, rdcs_t, rscm_t, rdcm_t;
+real w_s,w_u;
+real i_trap, R_trap, Cap_trap;
+real a_ss, b_ss, c_ss;
+
+
+
+analog begin
+
+
+
+// trap model parameter calculation
+// if strap==0 the trap model is turned off
+
+
+if (strap>0) begin
+    R_trap=1;
+    Cap_trap=1/pow(w0trap,10);
+end
+else begin
+    R_trap=0;
+    Cap_trap=0;
+end
+
+
+// DIBL modeling
+if (facss<1) begin
+    a_ss=1;
+    b_ss=2/(1-facss)-1;
+    c_ss=2/(1-facss);
+end
+else if (facss==1) begin
+    a_ss=0;
+    b_ss=1;
+    c_ss=1;
+end
+else begin
+    a_ss=-1;
+    b_ss=(1+facss)/(facss-1);
+    c_ss=2/(facss-1);
+end
+
+
+////////////////////////////////////////////////////////////////
+/////   Temperature dependant prefactors  //////////////////////
+////////////////////////////////////////////////////////////////
+
+
+T0 = tnom + `P_CELSIUS0; // <--- transformation to Kelvin
+
+//delta_T_s = Temp(tnode_s);
+delta_T_s = 0;
+Tvar_s = $temperature + delta_T_s;
+
+//delta_T_m = Temp(tnode_m);
+delta_T_m = 0.0;
+Tvar_m = $temperature + delta_T_m;
+
+vth0in_t = vth0in * (1 + alvth0in * delta_T_s);
+vthin_t = vthin * (1 + alvthin * delta_T_s);
+vth0ip_t = vth0ip * (1 + alvth0ip * delta_T_s);
+vthip_t = vthip * (1 + alvthip * delta_T_s);
+
+idstn_t = idstn * (1 + alidst*delta_T_s);
+idstp_t = idstp * (1 + alidst*delta_T_s);
+
+vthqs_t = vthqs * (1 + alvthqs * delta_T_s);
+vth0qs_t = vth0qs * (1 + alvth0qs * delta_T_s);
+vthqd_t = vthqd * (1 + alvthqd * delta_T_s);
+vth0qd_t = vth0qd * (1 + alvth0qd * delta_T_s);
+
+ctn0_t = ctn0 / (1 + alct0*delta_T_s);
+ctp0_t = ctp0 / (1 + alct0*delta_T_s);
+
+rmta_t = rmta * pow(Tvar_m/T0,zetrmta);
+amto_t = amto * pow(Tvar_m/T0,zetamto);
+
+rscs_t=rscs*(1+alrscon*delta_T_s);
+rdcs_t=rdcs*(1+alrscon*delta_T_s);
+rscm_t=rscm*(1+alrmcon*delta_T_m);
+rdcm_t=rdcm*(1+alrmcon*delta_T_m);
+
+////////////////////////////////////////////////////////////////
+/////   Network for trap modelling    //////////////////////////
+////////////////////////////////////////////////////////////////
+
+// i_trap=atrap*V(g,s)+btrap*V(g,s)*V(d,s)+ctrap;
+
+// I(node_trap) <+ Cap_trap*ddt(V(node_trap));
+// I(node_trap) <+ V(node_trap)*`Gmin;
+
+// if (R_trap>0) begin
+//     I(node_trap) <+ -i_trap;
+//     I(node_trap) <+ V(node_trap)/R_trap;
+// end
+// else begin
+//     V(node_trap) <+ 0;
+// end
+
+// vthin_t=vthin_t+V(node_trap);
+// vthip_t=vthip_t+V(node_trap);
+
+
+
+////////////////////////////////////////////////////////////////
+/////   Current model    ///////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+
+//electron current   fgsn
+
+vg_eff_n=V(gi,si)-0.5*(V(di,si) - hypot(V(di,si), $vt));
+
+vg_t=((vg_eff_n-vthin_t)+hypot(vg_eff_n-vthin_t,sthin))/2;
+
+u=1-vth0in_t/vg_t;
+
+athn_con=(ln(1+exp(1/athin)));
+
+if (u/athin>-10) begin
+    fgsn=ln(1+exp(u/athin))/athn_con;
+end
+else begin
+    fgsn=exp(u/athin)/athn_con;
+end
+
+//hole current   fgsp
+
+vg_eff_p=V(gi,di)+0.5*(V(di,si) - hypot(V(di,si), $vt));
+
+vg_t=((-vg_eff_p+vthip_t)+hypot(-vg_eff_p+vthip_t,sthip))/2;
+
+u=1-vth0ip_t/vg_t;
+
+athp_con=(ln(1+exp(1/athip)));
+
+if (u/athip>-10) begin
+    fgsp=ln(1+exp(u/athip))/athp_con;
+end
+else begin
+    fgsp=exp(u/athip)/athp_con;
+end
+
+
+fgs=idstp_t*fgsp+idstn_t*fgsn;
+
+
+//current  fds
+
+if (idstp==0) begin
+    u=V(di,si)/((tanh(a_ss*smss*(vg_eff_n-vthin_t))+b_ss)/c_ss*vdcr);
+end
+else if (idstn==0) begin
+    u=V(di,si)/((tanh(a_ss*smss*(-vg_eff_p+vthip_t))+b_ss)/c_ss*vdcr);
+end
+else begin
+    u=V(di,si)/vdcr;
+end
+
+fds=u/pow(1+pow(hypot(u,$vt),betdcr),(1/betdcr));
+
+
+curr = fgs*fds;
+
+
+////////////////////////////////////////////////////////////////
+/////   Charge  model    ///////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+
+//Qs
+
+if (V(gi,si)>vthqs_t) begin
+    vg_t=V(gi,si)-vthqs_t;
+    if (vg_t>1e-6*$vt) begin
+        u=1-vth0qs_t/vg_t;
+    end
+    else begin
+        u=1-vth0qs_t/(1e-6*$vt);
+    end
+    w_s=sqrt(u*u+athqs);
+    w_u=(u+w_s)/(1+sqrt(1+athqs));
+    Qs_cnt = pqsd*ctn0_t*vg_t*w_u*w_u;
+end
+else begin
+    vg_t=-V(gi,si)+vthqs_t;
+    if (vg_t>1e-6*$vt) begin
+        u=1-vth0qs_t/vg_t;
+    end
+    else begin
+        u=1-vth0qs_t/(1e-6*$vt);
+    end
+    w_s=sqrt(u*u+athqs);
+    w_u=(u+w_s)/(1+sqrt(1+athqs));
+    Qs_cnt = -pqsd*ctp0_t*vg_t*w_u*w_u;
+end
+
+
+//Qd
+
+if (V(gi,di)>vthqd_t) begin
+    vg_t=V(gi,di)-vthqd_t;
+    if (vg_t>1e-6*$vt) begin
+        u=1-vth0qd_t/vg_t;
+    end
+    else begin
+        u=1-vth0qd_t/(1e-6*$vt);
+    end
+    w_s=sqrt(u*u+athqd);
+    w_u=(u+w_s)/(1+sqrt(1+athqd));
+    Qd_cnt =(1-pqsd)*ctn0_t*vg_t*w_u*w_u;
+end
+else begin
+    vg_t=-V(gi,di)+vthqd_t;
+    if (vg_t>1e-6*$vt) begin
+        u=1-vth0qd_t/vg_t;
+    end
+    else begin
+        u=1-vth0qd_t/(1e-6*$vt);
+    end
+    w_s=sqrt(u*u+athqd);
+    w_u=(u+w_s)/(1+sqrt(1+athqd));
+    Qd_cnt = -(1-pqsd)*ctp0_t*vg_t*w_u*w_u;
+end
+
+
+
+
+////////////////////////////////////////////////////////////////
+/////   Circuit elements   /////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+
+// Transfer current
+
+I(di,si) <+ curr;
+
+
+// metallic tube current
+
+rmt=rmta_t+amto_t*hypot(V(dim,sim),sqrt($vt));
+
+if(rmta != 0) begin
+	I(dim,sim) <+ V(dim,sim)/rmt;
+end
+else begin
+	I(dim,sim) <+ 0;
+end
+
+
+// Dynamic currents
+
+I(gi,di) <+ ddt(Qd_cnt);
+I(gi,si) <+ ddt(Qs_cnt);
+
+I(gi,dim) <+ pqmt*cmt*ddt(V(gi,dim));
+I(gi,sim) <+ (1-pqmt)*cmt*ddt(V(gi,sim));
+
+
+// contact resistance
+
+if (rscs>0) begin
+    I(si,sx) <+ V(si,sx)/rscs_t;
+end
+else begin
+    V(si,sx) <+ 0;
+end
+
+if (rdcs>0) begin
+    I(di,dx) <+ V(di,dx)/rdcs_t;
+end
+else begin
+    V(di,dx) <+ 0;
+end
+
+
+if (rscm>0) begin
+    I(sim,sx) <+ V(sim,sx)/rscm_t;
+end
+else begin
+    V(sim,sx) <+ 0;
+end
+
+if (rdcm>0) begin
+    I(dim,dx) <+ V(dim,dx)/rdcm_t;
+end
+else begin
+    V(dim,dx) <+ 0;
+end
+
+
+// parasitic finger resistance
+
+if (rsf>0) begin
+    I(sx,s) <+ V(sx,s)/rsf;
+end
+else begin
+    V(sx,s) <+ 0;
+end
+
+if (rdf>0) begin
+    I(dx,d) <+ V(dx,d)/rdf;
+end
+else begin
+    V(dx,d) <+ 0;
+end
+
+if (rg>0) begin
+    I(gi,g) <+ V(gi,g)/rg;
+end
+else begin
+    V(gi,g) <+ 0;
+end
+
+
+// parasitic finger capacitance
+
+I(g,dx) <+ cgdpar1*ddt(V(g,dx));
+I(g,sx) <+ cgspar1*ddt(V(g,sx));
+I(gi,dx) <+ cgdpar2*ddt(V(gi,dx));
+I(gi,sx) <+ cgspar2*ddt(V(gi,sx));
+I(d,s) <+ cdspar*ddt(V(d,s));
+
+
+// transistor noise contribution
+
+
+// thermal noise of res. elements
+
+if (rscs>0) begin
+    I(si,sx) <+ white_noise(4*`P_K*Tvar_s/rscs_t,"th_r_scs");
+end
+
+if (rdcs>0) begin
+    I(di,dx) <+ white_noise(4*`P_K*Tvar_s/rdcs_t,"th_r_dcs");
+end
+
+if (rscm>0) begin
+    I(sim,sx) <+ white_noise(4*`P_K*Tvar_m/rscm_t,"th_r_scm");
+end
+
+if (rdcm>0) begin
+    I(dim,dx) <+ white_noise(4*`P_K*Tvar_m/rdcm_t,"th_r_dcm");
+end
+
+if (rsf>0) begin
+    I(sx,s) <+ white_noise(4*`P_K*$temperature/rsf,"th_rsf");
+end
+
+if (rdf>0) begin
+    I(dx,d) <+ white_noise(4*`P_K*$temperature/rdf,"th_rdf");
+end
+
+if (rg>0) begin
+    I(gi,g) <+ white_noise(4*`P_K*$temperature/rg,"th_rg");
+end
+
+
+// thermal noise semiconducting tubes
+// description still missing (taking advantage of transmission probability)
+
+// thermal noise metallic tubes
+//V(dim,sim) <+ white_noise(4*`P_K*Tvar_m*rmt,"th_rmt");
+
+// shot noise semiconducting tubes
+I(di,si) <+ white_noise(2*`P_Q*curr*fanof,"sh_ch");
+
+// shot noise of metallic tubes
+//I(dim,sim) <+ white_noise(2*`P_Q*I(dim,sim)*fanofmt,"sh_mt");
+
+// 1/f noise at channel semiconducting tubes
+
+if ((Qs_cnt+Qd_cnt)>0)
+begin
+    fnamp = hoogef/(abs((Qs_cnt+Qd_cnt)/`P_Q));
+    I(di,si) <+ flicker_noise(fnamp*pow(abs(curr),2),beta_fn,"1of_ch");
+end
+
+// 1/f noise of metallic tubes
+// description as for semiconducting tubes, but number of carriers required
+
+
+// THERMAL NODES
+
+//////// Power dissipation //////////
+
+Pdiss_s = curr*V(di,si);
+Pdiss_m = V(dim,sim)*V(dim,sim)/rmt;
+
+//Temp(tnode_s) <+ (rths * Pdiss_s);
+//Temp(tnode_m) <+ (rthm * Pdiss_m);
+
+
+end
+
+endmodule

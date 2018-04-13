@@ -1,0 +1,762 @@
+# 1 "admsva/cntfet.va"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 1 "constants.h"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 25 "constants.h"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 25 "admsva/cntfet.va"
+# 1 "discipline.h"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 25 "discipline.h"
+
+
+
+nature current
+  access = I;
+  units = "A";
+  abstol = 0.001234;
+endnature
+
+
+nature voltage
+  access = V;
+  units = "V";
+  abstol = 0.0004321;
+endnature
+
+
+nature power
+  access = Pwr;
+  units = "W";
+  abstol = 0.00101010;
+endnature
+
+
+nature flux
+  access = Phi;
+  units = "We";
+endnature
+
+
+nature temperature
+  access = Temp;
+  units = "K";
+  abstol = 3.14;
+endnature
+
+
+discipline thermal
+  potential temperature;
+  flow power;
+enddiscipline
+
+
+discipline electrical
+  potential voltage;
+  flow current;
+enddiscipline
+
+discipline magnetic
+  potential voltage; 
+  flow current; 
+enddiscipline
+
+discipline rotational_omega
+  potential voltage; 
+  flow current; 
+enddiscipline
+
+
+
+# 26 "admsva/cntfet.va"
+
+
+
+
+
+
+
+
+module cntfet(d,g,s);
+
+inout d,g,s;
+electrical d,g,s,dx,sx,di,gi,si,dim,sim,node_trap;
+thermal tnode_s,tnode_m;
+
+
+
+
+parameter real idstn = 0.3 from [0:10];
+
+
+parameter real vthin = -0.15 from [-10:10];
+
+
+parameter real vth0in = 5 from (0:100];
+
+
+parameter real athin = 2 from (0:100];
+
+
+parameter real sthin = 0.2 from [0:1];
+
+
+parameter real idstp = 0.15 from [0:10];
+
+
+parameter real vthip = -0.03 from [-10:10];
+
+
+parameter real vth0ip = 5 from (0:100];
+
+
+parameter real athip = 2 from (0:100];
+
+
+parameter real sthip = 0.2 from [0:1];
+
+
+parameter real vdcr = 2 from (0:50];
+
+
+parameter real betdcr = 1 from (0:50];
+
+
+parameter real smss = 10 from [0:100];
+
+
+parameter real facss = 1 from [1:10];
+
+
+parameter real rscs = 20 from [0:1M];
+
+
+parameter real rdcs = 20 from [0:1M];
+
+
+
+
+
+parameter real ctn0 = 2e-13 from [0:1u];
+
+
+parameter real ctp0 = 2e-13 from [0:1u];
+
+
+parameter real vthqs = -0.1 from [-10:10];
+
+
+parameter real vth0qs = 0.7 from (0:100];
+
+
+parameter real athqs = 3 from (0:100];
+
+
+parameter real vthqd = -1 from [-10:10];
+
+
+parameter real vth0qd = 3 from (0:100];
+
+
+parameter real athqd = 3 from (0:100];
+
+
+parameter real pqsd = 0.15 from [0:1];
+
+
+
+
+
+parameter real rmta = 30 from [0:1G];
+
+
+parameter real amto = 25 from [0:1M];
+
+
+parameter real cmt = 2e-13 from [0:1u];
+
+
+parameter real pqmt = 0.5 from [0:1];
+
+
+parameter real rscm = 8 from [0:1M];
+
+
+parameter real rdcm = 8 from [0:1M];
+
+
+
+
+
+parameter real fanof = 1.0 from [0:10];
+
+
+parameter real fanofmt = 1.0 from [0:10];
+
+
+parameter real hoogef = 2e-3 from [0:1];
+
+
+parameter real beta_fn = 1 from [0:10];
+
+
+
+
+
+parameter real rsf = 0.1 from [0:1k];
+
+
+parameter real rdf = 0.1 from [0:1k];
+
+
+parameter real rg = 10 from [0:1k];
+
+
+parameter real cgspar1=0 from [0:1u];
+
+
+parameter real cgspar2=3e-14 from [0:1u];
+
+
+
+parameter real cgdpar1=8e-14 from [0:1u];
+
+
+parameter real cgdpar2=3e-14 from [0:1u];
+
+
+parameter real cdspar=2e-14 from [0:1u];
+
+
+
+
+
+parameter real tnom = 27;
+parameter real rths = 1 from [0:1k];
+parameter real rthm = 1 from [0:1k];
+
+parameter real zetrmta = 0 from [0:10];
+parameter real zetamto = 0 from [0:10];
+
+parameter real alvthin = 0 from [0:10];
+parameter real alvth0in = 0 from [0:10];
+parameter real alvthip = 0 from [0:10];
+parameter real alvth0ip = 0 from [0:10];
+
+parameter real alidst = 0 from [0:10];
+parameter real alct0 = 0 from [0:10];
+
+parameter real alvthqs = 0 from [0:10];
+parameter real alvth0qs = 0 from [0:10];
+parameter real alvthqd = 0 from [0:10];
+parameter real alvth0qd = 0 from [0:10];
+
+parameter real alrscon = 0 from [0:10];
+parameter real alrmcon = 0 from [0:10];
+
+
+
+
+
+parameter real atrap = 0.5;
+parameter real btrap = 0.5;
+parameter real ctrap = 2;
+
+parameter real w0trap = 0;
+parameter real strap = 0;
+
+
+real fds,fgs,fgsp,fgsn,Qs_cnt,Qd_cnt,u;
+real vg_t,vg_eff_n,vg_eff_p,athn_con,athp_con;
+real curr, rmt;
+real fnamp;
+real rmta_t, amto_t;
+real delta_T_s, Tvar_s,delta_T_m, Tvar_m,T0,Pdiss_s,Pdiss_m;
+real idstn_t, idstp_t, ctn0_t, ctp0_t;
+real vth0in_t,vthin_t,vth0ip_t,vthip_t;
+real vthqs_t,vth0qs_t,vthqd_t,vth0qd_t;
+real rscs_t, rdcs_t, rscm_t, rdcm_t;
+real w_s,w_u;
+real i_trap, R_trap, Cap_trap;
+real a_ss, b_ss, c_ss;
+
+
+
+analog begin
+
+
+
+
+
+
+
+if (strap>0) begin
+    R_trap=1;
+    Cap_trap=1/pow(w0trap,10);
+end
+else begin
+    R_trap=0;
+    Cap_trap=0;
+end
+
+
+
+if (facss<1) begin
+    a_ss=1;
+    b_ss=2/(1-facss)-1;
+    c_ss=2/(1-facss);
+end
+else if (facss==1) begin
+    a_ss=0;
+    b_ss=1;
+    c_ss=1;
+end
+else begin
+    a_ss=-1;
+    b_ss=(1+facss)/(facss-1);
+    c_ss=2/(facss-1);
+end
+
+
+
+
+
+
+
+T0 = tnom +  273.15; 
+
+delta_T_s = Temp(tnode_s);
+Tvar_s = $temperature + delta_T_s;
+
+delta_T_m = Temp(tnode_m);
+Tvar_m = $temperature + delta_T_m;
+
+vth0in_t = vth0in * (1 + alvth0in * delta_T_s);
+vthin_t = vthin * (1 + alvthin * delta_T_s);
+vth0ip_t = vth0ip * (1 + alvth0ip * delta_T_s);
+vthip_t = vthip * (1 + alvthip * delta_T_s);
+
+idstn_t = idstn * (1 + alidst*delta_T_s);
+idstp_t = idstp * (1 + alidst*delta_T_s);
+
+vthqs_t = vthqs * (1 + alvthqs * delta_T_s);
+vth0qs_t = vth0qs * (1 + alvth0qs * delta_T_s);
+vthqd_t = vthqd * (1 + alvthqd * delta_T_s);
+vth0qd_t = vth0qd * (1 + alvth0qd * delta_T_s);
+
+ctn0_t = ctn0 / (1 + alct0*delta_T_s);
+ctp0_t = ctp0 / (1 + alct0*delta_T_s);
+
+rmta_t = rmta * pow(Tvar_m/T0,zetrmta);
+amto_t = amto * pow(Tvar_m/T0,zetamto);
+
+rscs_t=rscs*(1+alrscon*delta_T_s);
+rdcs_t=rdcs*(1+alrscon*delta_T_s);
+rscm_t=rscm*(1+alrmcon*delta_T_m);
+rdcm_t=rdcm*(1+alrmcon*delta_T_m);
+
+
+
+
+
+i_trap=atrap*V(g,s)+btrap*V(g,s)*V(d,s)+ctrap;
+
+I(node_trap) <+ Cap_trap*ddt(V(node_trap));
+I(node_trap) <+ V(node_trap)* $simparam("gmin",1e-12);
+
+if (R_trap>0) begin
+    I(node_trap) <+ -i_trap;
+    I(node_trap) <+ V(node_trap)/R_trap;
+end
+else begin
+    V(node_trap) <+ 0;
+end
+
+vthin_t=vthin_t+V(node_trap);
+vthip_t=vthip_t+V(node_trap);
+
+
+
+
+
+
+
+
+
+
+vg_eff_n=V(gi,si)-0.5*(V(di,si) - hypot(V(di,si), $vt));
+
+vg_t=((vg_eff_n-vthin_t)+hypot(vg_eff_n-vthin_t,sthin))/2;
+
+u=1-vth0in_t/vg_t;
+
+athn_con=(ln(1+exp(1/athin)));
+
+if (u/athin>-10) begin
+    fgsn=ln(1+exp(u/athin))/athn_con;
+end
+else begin
+    fgsn=exp(u/athin)/athn_con;
+end
+
+
+
+vg_eff_p=V(gi,di)+0.5*(V(di,si) - hypot(V(di,si), $vt));
+
+vg_t=((-vg_eff_p+vthip_t)+hypot(-vg_eff_p+vthip_t,sthip))/2;
+
+u=1-vth0ip_t/vg_t;
+
+athp_con=(ln(1+exp(1/athip)));
+
+if (u/athip>-10) begin
+    fgsp=ln(1+exp(u/athip))/athp_con;
+end
+else begin
+    fgsp=exp(u/athip)/athp_con;
+end
+
+
+fgs=idstp_t*fgsp+idstn_t*fgsn;
+
+
+
+
+if (idstp==0) begin
+    u=V(di,si)/((tanh(a_ss*smss*(vg_eff_n-vthin_t))+b_ss)/c_ss*vdcr);
+end
+else if (idstn==0) begin
+    u=V(di,si)/((tanh(a_ss*smss*(-vg_eff_p+vthip_t))+b_ss)/c_ss*vdcr);
+end
+else begin
+    u=V(di,si)/vdcr;
+end
+
+fds=u/pow(1+pow(hypot(u,$vt),betdcr),(1/betdcr));
+
+
+curr = fgs*fds;
+
+
+
+
+
+
+
+
+
+if (V(gi,si)>vthqs_t) begin
+    vg_t=V(gi,si)-vthqs_t;
+    if (vg_t>1e-6*$vt) begin
+        u=1-vth0qs_t/vg_t;
+    end
+    else begin
+        u=1-vth0qs_t/(1e-6*$vt);
+    end
+    w_s=sqrt(u*u+athqs);
+    w_u=(u+w_s)/(1+sqrt(1+athqs));
+    Qs_cnt = pqsd*ctn0_t*vg_t*w_u*w_u;
+end
+else begin
+    vg_t=-V(gi,si)+vthqs_t;
+    if (vg_t>1e-6*$vt) begin
+        u=1-vth0qs_t/vg_t;
+    end
+    else begin
+        u=1-vth0qs_t/(1e-6*$vt);
+    end
+    w_s=sqrt(u*u+athqs);
+    w_u=(u+w_s)/(1+sqrt(1+athqs));
+    Qs_cnt = -pqsd*ctp0_t*vg_t*w_u*w_u;
+end
+
+
+
+
+if (V(gi,di)>vthqd_t) begin
+    vg_t=V(gi,di)-vthqd_t;
+    if (vg_t>1e-6*$vt) begin
+        u=1-vth0qd_t/vg_t;
+    end
+    else begin
+        u=1-vth0qd_t/(1e-6*$vt);
+    end
+    w_s=sqrt(u*u+athqd);
+    w_u=(u+w_s)/(1+sqrt(1+athqd));
+    Qd_cnt =(1-pqsd)*ctn0_t*vg_t*w_u*w_u;
+end
+else begin
+    vg_t=-V(gi,di)+vthqd_t;
+    if (vg_t>1e-6*$vt) begin
+        u=1-vth0qd_t/vg_t;
+    end
+    else begin
+        u=1-vth0qd_t/(1e-6*$vt);
+    end
+    w_s=sqrt(u*u+athqd);
+    w_u=(u+w_s)/(1+sqrt(1+athqd));
+    Qd_cnt = -(1-pqsd)*ctp0_t*vg_t*w_u*w_u;
+end
+
+
+
+
+
+
+
+
+
+
+
+I(di,si) <+ curr;
+
+
+
+
+rmt=rmta_t+amto_t*hypot(V(dim,sim),sqrt($vt));
+
+if(rmta != 0) begin
+	I(dim,sim) <+ V(dim,sim)/rmt;
+end
+else begin
+	I(dim,sim) <+ 0;
+end
+
+
+
+
+I(gi,di) <+ ddt(Qd_cnt);
+I(gi,si) <+ ddt(Qs_cnt);
+
+I(gi,dim) <+ pqmt*cmt*ddt(V(gi,dim));
+I(gi,sim) <+ (1-pqmt)*cmt*ddt(V(gi,sim));
+
+
+
+
+if (rscs>0) begin
+    I(si,sx) <+ V(si,sx)/rscs_t;
+end
+else begin
+    V(si,sx) <+ 0;
+end
+
+if (rdcs>0) begin
+    I(di,dx) <+ V(di,dx)/rdcs_t;
+end
+else begin
+    V(di,dx) <+ 0;
+end
+
+
+if (rscm>0) begin
+    I(sim,sx) <+ V(sim,sx)/rscm_t;
+end
+else begin
+    V(sim,sx) <+ 0;
+end
+
+if (rdcm>0) begin
+    I(dim,dx) <+ V(dim,dx)/rdcm_t;
+end
+else begin
+    V(dim,dx) <+ 0;
+end
+
+
+
+
+if (rsf>0) begin
+    I(sx,s) <+ V(sx,s)/rsf;
+end
+else begin
+    V(sx,s) <+ 0;
+end
+
+if (rdf>0) begin
+    I(dx,d) <+ V(dx,d)/rdf;
+end
+else begin
+    V(dx,d) <+ 0;
+end
+
+if (rg>0) begin
+    I(gi,g) <+ V(gi,g)/rg;
+end
+else begin
+    V(gi,g) <+ 0;
+end
+
+
+
+
+I(g,dx) <+ cgdpar1*ddt(V(g,dx));
+I(g,sx) <+ cgspar1*ddt(V(g,sx));
+I(gi,dx) <+ cgdpar2*ddt(V(gi,dx));
+I(gi,sx) <+ cgspar2*ddt(V(gi,sx));
+I(d,s) <+ cdspar*ddt(V(d,s));
+
+
+
+
+
+
+
+if (rscs>0) begin
+    I(si,sx) <+ white_noise(4* 1.3806503e-23*Tvar_s/rscs_t,"th_r_scs");
+end
+
+if (rdcs>0) begin
+    I(di,dx) <+ white_noise(4* 1.3806503e-23*Tvar_s/rdcs_t,"th_r_dcs");
+end
+
+if (rscm>0) begin
+    I(sim,sx) <+ white_noise(4* 1.3806503e-23*Tvar_m/rscm_t,"th_r_scm");
+end
+
+if (rdcm>0) begin
+    I(dim,dx) <+ white_noise(4* 1.3806503e-23*Tvar_m/rdcm_t,"th_r_dcm");
+end
+
+if (rsf>0) begin
+    I(sx,s) <+ white_noise(4* 1.3806503e-23*$temperature/rsf,"th_rsf");
+end
+
+if (rdf>0) begin
+    I(dx,d) <+ white_noise(4* 1.3806503e-23*$temperature/rdf,"th_rdf");
+end
+
+if (rg>0) begin
+    I(gi,g) <+ white_noise(4* 1.3806503e-23*$temperature/rg,"th_rg");
+end
+
+
+
+
+
+
+
+
+
+I(di,si) <+ white_noise(2* 1.6021766208e-19*curr*fanof,"sh_ch");
+
+
+
+
+
+
+if ((Qs_cnt+Qd_cnt)>0)
+begin
+    fnamp = hoogef/(abs((Qs_cnt+Qd_cnt)/ 1.6021766208e-19));
+    I(di,si) <+ flicker_noise(fnamp*pow(abs(curr),2),beta_fn,"1of_ch");
+end
+
+
+
+
+
+
+
+
+
+Pdiss_s = curr*V(di,si);
+Pdiss_m = V(dim,sim)*V(dim,sim)/rmt;
+
+Temp(tnode_s) <+ (rths * Pdiss_s);
+Temp(tnode_m) <+ (rthm * Pdiss_m);
+
+
+end
+
+endmodule
