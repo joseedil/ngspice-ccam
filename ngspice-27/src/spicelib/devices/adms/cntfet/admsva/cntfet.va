@@ -31,9 +31,9 @@
 `define k_Bnorm `P_K/`P_Q
 `define Gmin $simparam("gmin",1e-12)
 
-module cntfet(d,g,s);
+module cntfet(d,g,s,b);
 
-inout d,g,s;
+inout d,g,s,b;
 electrical d,g,s,dx,sx,di,gi,si,dim,sim,node_trap;
 // thermal tnode_s,tnode_m;
 
