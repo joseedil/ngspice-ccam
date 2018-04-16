@@ -1,9 +1,17 @@
-* Test
+* CNTFET transfer curve
+*
+* To run, call ngspice with the -b option and use the spice_readfile.m
+* Octave function.
 
+*** Circuit description
+* CNTFET
 M1 vds vgs 0 0 mod1
+
+* Voltage sources
 V1 vgs 0 0.4
 V2 vds 0 1
 
+* CNTFET model
 .MODEL mod1 nmos level=99
 +idstn="0.25592" vthin="-0.17594" vth0in="35.662" athin="18.029"
 +sthin="0.2" idstp="0" vthip="-0.032389" vth0ip="84.762" athip="9.0461"
@@ -19,4 +27,10 @@ V2 vds 0 1
 +alidst="0" alct0="0" alvthqs="0" alvth0qs="0" alvthqd="0" alvth0qd="0"
 +alrscon="0" alrmcon="0" atrap="0" btrap="0" ctrap="0" w0trap="0" strap="0"
 
-.dc V1 -3 3 0.01
+* Analysis
+.control
+dc V1 -0.5 1 0.01
+write
+.endc
+
+.end
