@@ -5,7 +5,8 @@ This is a fork o ngspice version 27 available at http://ngspice.sourceforge.net 
 # Install instructions
 
 On Debian systems do
-```sudo apt-get install bison flex libx11-dev autoconf automake libtool texinfo libreadline-dev tcl libfftw3-dev libxaw-dev
+```
+sudo apt-get install bison flex libx11-dev autoconf automake libtool texinfo libreadline-dev tcl libfftw3-dev libxaw-dev
 ```
 
 Go to the build folder, configure and compile the project:
