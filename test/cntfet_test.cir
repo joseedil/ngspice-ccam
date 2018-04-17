@@ -27,10 +27,28 @@ V2 vds 0 1
 +alidst="0" alct0="0" alvthqs="0" alvth0qs="0" alvthqd="0" alvth0qd="0"
 +alrscon="0" alrmcon="0" atrap="0" btrap="0" ctrap="0" w0trap="0" strap="0"
 
-* Analysis
+
+*** Analysis
+* Just call ngspice -b cntfet.cir.
+* It will simulate the circuit and output data on a file called rawspice.raw.
+
 .control
-dc V1 -0.5 1 0.01
-write
+dc V2 0 1 0.005 v1 0 1 0.1
+
+
+* The following commands create a dump file with the data.
+* To plot, call gnuplot and use the command
+* gnuplot> plot "rawspice.raw" using 1:2
+
+set wr_vecnames
+set wr_singlescale
+wrdata rawspice.raw -v2#branch vgs
+
+
+* Alternative export command: more info exported.
+*set filetype=ascii
+*write rawspice.raw -v2#branch
+
 .endc
 
 .end
