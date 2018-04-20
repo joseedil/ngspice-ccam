@@ -1,8 +1,8 @@
-#ngspice-ccam
+# ngspice-ccam
 
-This is a fork o ngspice version 27 available at http://ngspice.sourceforge.net modified to compile with the CCAM CNTFET model (https://nanohub.org/publications/62/2). The CCAM model is provided as a Verilog-A compact model and this repository brings the adapted ngspice source files to make the model available at the simulator.
+This is a fork of ngspice version 27 available at http://ngspice.sourceforge.net modified to compile with the CCAM CNTFET model (https://nanohub.org/publications/62/2). The CCAM model is provided as a Verilog-A compact model and this repository brings the adapted ngspice source files to make the model available at the simulator. Some small bugs on the adms scripts provided by ngspice were addressed.
 
-# Install instructions
+## Install instructions
 
 On Debian systems, install the required libraries:
 ```
@@ -17,10 +17,13 @@ cd ADMS
 ./configure --enable-maintainer-mode --prefix=$HOME/.local/adms
 make
 make install
+export PATH=$HOME/.local/adms/bin:$PATH
 ```
 
-Go to the build folder, configure and compile the project:
+Clone the project and build the project, configure and compile the project:
 ```
+git clone git@github.com:joseedil/ngspice-ccam.git
+cd ngspice-ccam/build
 ./reconfigure
 make
 make install
@@ -31,7 +34,7 @@ The script installs the binary to `$HOME/.local/ngspice`. You have to adjust you
 export PATH=$HOME/.local/ngspice/bin:$PATH
 ```
 
-# Usage
+## Usage
 In the spice netlist (note that the order of nodes changes from other MOSFET models:
 
 ```
@@ -64,4 +67,4 @@ M<name> <VD> <VG> <VS> cntfet
 
 For specifics about the CCAM model parameters please refer to the [CCAM model manual](https://nanohub.org/publications/62/serve/2/494?el=6&download=1).
 
-Due to issues with ADMS Verilog-A to C++ translation, the trap network described in the CCAM manual was disabled on this implementation.
+Due to issues with ADMS Verilog-A to C++ translation, the trap network and some thermal nodes described in the CCAM manual was disabled on this implementation.
